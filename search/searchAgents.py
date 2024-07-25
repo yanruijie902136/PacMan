@@ -371,18 +371,27 @@ def cornersHeuristic(state: Any, problem: CornersProblem):
     """
     corners = problem.corners # These are the corner coordinates
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
+    height, width = walls.height - 3, walls.width - 3
 
     "*** YOUR CODE HERE ***"
-    def manhattan(position1, position2):
-        x1, y1 = position1
-        x2, y2 = position2
-        return abs(x1 - x2) + abs(y1 - y2)
-
     position, cornersTouched = state
-    untouchedCorners = [
-        corner for touched, corner in zip(cornersTouched, corners) if not touched
-    ]
-    return max([manhattan(position, corner) for corner in untouchedCorners]) if untouchedCorners else 0
+    untouchedCorners = [corner for touched, corner in zip(cornersTouched, corners) if not touched]
+    if not untouchedCorners:
+        return 0
+
+    # The heuristic value is chosen as the sum of
+    #   (1) the smallest Manhattan distance between the current position and any untouched corner, and
+    #   (2) the smallest Manhattan distance needed to go through all untouched corners starting at any of them.
+
+    heuristicValue = min([util.manhattanDistance(position, corner) for corner in untouchedCorners])
+    match len(untouchedCorners):
+        case 2:
+            heuristicValue += util.manhattanDistance(untouchedCorners[0], untouchedCorners[1])
+        case 3:
+            heuristicValue += height + width
+        case 4:
+            heuristicValue += min(height, width) * 2 + max(height, width)
+    return heuristicValue
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
