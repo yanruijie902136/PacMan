@@ -485,15 +485,21 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
-    def mazeDistanceWrapper(food):
-        if (position, food) not in problem.heuristicInfo:
-            problem.heuristicInfo[(position, food)] = mazeDistance(
-                point1=position, point2=food, gameState=problem.startingGameState
+    def mazeDistanceWrapper(point1, point2):
+        if (point1, point2) not in problem.heuristicInfo:
+            problem.heuristicInfo[(point1, point2)] = mazeDistance(
+                point1, point2, gameState=problem.startingGameState
             )
-        return problem.heuristicInfo[(position, food)]
+        return problem.heuristicInfo[(point1, point2)]
 
     foodList = foodGrid.asList()
-    return max([mazeDistanceWrapper(food) for food in foodList]) if foodList else 0
+    if not foodList:
+        return 0
+    distancesToFoods = [mazeDistanceWrapper(position, food) for food in foodList]
+    distancesBetweenFoods = [
+        mazeDistanceWrapper(food1, food2) for food1 in foodList for food2 in foodList
+    ]
+    return min(distancesToFoods) + max(distancesBetweenFoods)
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
