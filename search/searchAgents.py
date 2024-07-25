@@ -34,6 +34,7 @@ description for details.
 Good luck and happy searching!
 """
 
+from itertools import combinations_with_replacement
 from typing import List, Tuple, Any
 from game import Directions
 from game import Agent
@@ -486,18 +487,20 @@ def foodHeuristic(state: Tuple[Tuple, List[List]], problem: FoodSearchProblem):
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
     def mazeDistanceWrapper(point1, point2):
-        if (point1, point2) not in problem.heuristicInfo:
-            problem.heuristicInfo[(point1, point2)] = mazeDistance(
+        key = (min(point1, point2), max(point1, point2))
+        if key not in problem.heuristicInfo:
+            problem.heuristicInfo[key] = mazeDistance(
                 point1, point2, gameState=problem.startingGameState
             )
-        return problem.heuristicInfo[(point1, point2)]
+        return problem.heuristicInfo[key]
 
     foodList = foodGrid.asList()
     if not foodList:
         return 0
     distancesToFoods = [mazeDistanceWrapper(position, food) for food in foodList]
     distancesBetweenFoods = [
-        mazeDistanceWrapper(food1, food2) for food1 in foodList for food2 in foodList
+        mazeDistanceWrapper(food1, food2)
+        for food1, food2 in combinations_with_replacement(foodList, 2)
     ]
     return min(distancesToFoods) + max(distancesBetweenFoods)
 
