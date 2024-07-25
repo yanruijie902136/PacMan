@@ -72,6 +72,29 @@ def tinyMazeSearch(problem):
     w = Directions.WEST
     return  [s, s, w, s, w, w, s, w]
 
+
+def genericSearch(problem: SearchProblem, fringe):
+    visitedStates = {}
+    startState = problem.getStartState()
+
+    fringe.push((startState, None, None, 0))
+    while not fringe.isEmpty():
+        currState, prevState, action, currCost = fringe.pop()
+        if currState in visitedStates:
+            continue
+        visitedStates[currState] = (prevState, action)
+
+        if problem.isGoalState(currState):
+            actions = []
+            while currState != startState:
+                currState, action = visitedStates[currState]
+                actions.append(action)
+            return actions[::-1]
+
+        for nextState, action, cost in problem.getSuccessors(currState):
+            fringe.push((nextState, currState, action, currCost + cost))
+
+
 def depthFirstSearch(problem: SearchProblem):
     """
     Search the deepest nodes in the search tree first.
@@ -87,75 +110,26 @@ def depthFirstSearch(problem: SearchProblem):
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
     "*** YOUR CODE HERE ***"
-    stack = util.Stack()
-    visitedStates = {}
-    startState = problem.getStartState()
+    return genericSearch(problem, util.Stack())
 
-    stack.push((startState, None, None))
-    while not stack.isEmpty():
-        currState, prevState, action = stack.pop()
-        if currState in visitedStates:
-            continue
-        visitedStates[currState] = (prevState, action)
-
-        if problem.isGoalState(currState):
-            actions = []
-            while currState != startState:
-                currState, action = visitedStates[currState]
-                actions.append(action)
-            return actions[::-1]
-
-        for nextState, action, cost in problem.getSuccessors(currState):
-            stack.push((nextState, currState, action))
 
 def breadthFirstSearch(problem: SearchProblem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    queue = util.Queue()
-    visitedStates = {}
-    startState = problem.getStartState()
+    return genericSearch(problem, util.Queue())
 
-    queue.push((startState, None, None))
-    while not queue.isEmpty():
-        currState, prevState, action = queue.pop()
-        if currState in visitedStates:
-            continue
-        visitedStates[currState] = (prevState, action)
-
-        if problem.isGoalState(currState):
-            actions = []
-            while currState != startState:
-                currState, action = visitedStates[currState]
-                actions.append(action)
-            return actions[::-1]
-
-        for nextState, action, cost in problem.getSuccessors(currState):
-            queue.push((nextState, currState, action))
 
 def uniformCostSearch(problem: SearchProblem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    priorityQueue = util.PriorityQueue()
-    visitedStates = {}
-    startState = problem.getStartState()
+    def priorityFunction(item):
+        currState, prevState, action, currCost = item
+        return currCost
 
-    priorityQueue.push((startState, None, None, 0), priority=0)
-    while not priorityQueue.isEmpty():
-        currState, prevState, action, currCost = priorityQueue.pop()
-        if currState in visitedStates:
-            continue
-        visitedStates[currState] = (prevState, action)
+    return genericSearch(
+        problem, util.PriorityQueueWithFunction(priorityFunction)
+    )
 
-        if problem.isGoalState(currState):
-            actions = []
-            while currState != startState:
-                currState, action = visitedStates[currState]
-                actions.append(action)
-            return actions[::-1]
-
-        for nextState, action, cost in problem.getSuccessors(currState):
-            nextCost = currCost + cost
-            priorityQueue.push((nextState, currState, action, nextCost), priority=nextCost)
 
 def nullHeuristic(state, problem=None):
     """
@@ -164,33 +138,17 @@ def nullHeuristic(state, problem=None):
     """
     return 0
 
+
 def aStarSearch(problem: SearchProblem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
     def priorityFunction(item):
-        currState, *_, cost = item
-        return cost + heuristic(currState, problem)
+        currState, prevState, action, currCost = item
+        return currCost + heuristic(currState, problem)
 
-    priorityQueue = util.PriorityQueueWithFunction(priorityFunction)
-    visitedStates = {}
-    startState = problem.getStartState()
-
-    priorityQueue.push((startState, None, None, 0))
-    while not priorityQueue.isEmpty():
-        currState, prevState, action, currCost = priorityQueue.pop()
-        if currState in visitedStates:
-            continue
-        visitedStates[currState] = (prevState, action)
-
-        if problem.isGoalState(currState):
-            actions = []
-            while currState != startState:
-                currState, action = visitedStates[currState]
-                actions.append(action)
-            return actions[::-1]
-
-        for nextState, action, cost in problem.getSuccessors(currState):
-            priorityQueue.push((nextState, currState, action, currCost + cost))
+    return genericSearch(
+        problem, util.PriorityQueueWithFunction(priorityFunction)
+    )
 
 
 # Abbreviations
