@@ -79,9 +79,18 @@ class ReflexAgent(Agent):
             return -math.inf
         if not newFood.asList():
             return math.inf
+
         distanceToFoods = [manhattanDistance(newPos, food) for food in newFood.asList()]
-        distanceToGhosts = [manhattanDistance(newPos, ghostState.getPosition()) for ghostState in newGhostStates]
-        return successorGameState.getScore() + min(distanceToGhosts) / min(distanceToFoods)
+        foodScore = 1 / min(distanceToFoods)
+
+        unscaredGhosts = [
+            ghostState.getPosition()
+            for ghostState, scaredTime in zip(newGhostStates, newScaredTimes) if scaredTime == 0
+        ]
+        distanceToGhosts = [manhattanDistance(newPos, ghost) for ghost in unscaredGhosts]
+        ghostScore = 99999 if not unscaredGhosts else min(distanceToGhosts)
+
+        return successorGameState.getScore() + foodScore * ghostScore
 
 def scoreEvaluationFunction(currentGameState: GameState):
     """
