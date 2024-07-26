@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -44,26 +44,39 @@ DIR_TO_DXDY_MAP = {'North':(0, 1), 'South':(0, -1), 'East':(1, 0), 'West':(-1, 0
 
 def sentence1() -> Expr:
     """Returns a Expr instance that encodes that the following expressions are all true.
-    
+
     A or B
     (not A) if and only if ((not B) or C)
     (not A) or (not B) or C
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    A, B, C = Expr("A"), Expr("B",), Expr("C")
+    expressions = [
+        A | B,
+        ~A % (~B | C),
+        disjoin([~A, ~B, C]),
+    ]
+    return conjoin(expressions)
     "*** END YOUR CODE HERE ***"
 
 
 def sentence2() -> Expr:
     """Returns a Expr instance that encodes that the following expressions are all true.
-    
+
     C if and only if (B or D)
     A implies ((not B) and (not D))
     (not (B and (not C))) implies A
     (not D) implies C
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    A, B, C, D = Expr("A"), Expr("B",), Expr("C"), Expr("D")
+    expressions = [
+        C % (B | D),
+        A >> (~B & ~D),
+        ~(B & ~C) >> A,
+        ~D >> C,
+    ]
+    return conjoin(expressions)
     "*** END YOUR CODE HERE ***"
 
 
@@ -80,7 +93,17 @@ def sentence3() -> Expr:
     Pacman is born at time 0.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    PacmanAlive_1 = PropSymbolExpr("PacmanAlive", time=1)
+    PacmanAlive_0 = PropSymbolExpr("PacmanAlive", time=0)
+    PacmanBorn_0 = PropSymbolExpr("PacmanBorn", time=0)
+    PacmanKilled_0 = PropSymbolExpr("PacmanKilled", time=0)
+
+    expressions = [
+        PacmanAlive_1 % ((PacmanAlive_0 & ~PacmanKilled_0) | (~PacmanAlive_0 & PacmanBorn_0)),
+        ~(PacmanAlive_0 & PacmanBorn_0),
+        PacmanBorn_0,
+    ]
+    return conjoin(expressions)
     "*** END YOUR CODE HERE ***"
 
 def findModel(sentence: Expr) -> Dict[Expr, bool]:
@@ -96,15 +119,15 @@ def findModelUnderstandingCheck() -> Dict[Expr, bool]:
     """
     a = Expr('A')
     "*** BEGIN YOUR CODE HERE ***"
-    print("a.__dict__ is:", a.__dict__) # might be helpful for getting ideas
-    util.raiseNotDefined()
+    a.op = 'a'
+    return {a: True}
     "*** END YOUR CODE HERE ***"
 
 def entails(premise: Expr, conclusion: Expr) -> bool:
     """Returns True if the premise entails the conclusion and False otherwise.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return findModel(~(premise >> conclusion)) is False
     "*** END YOUR CODE HERE ***"
 
 def plTrueInverse(assignments: Dict[Expr, bool], inverse_statement: Expr) -> bool:
@@ -112,7 +135,7 @@ def plTrueInverse(assignments: Dict[Expr, bool], inverse_statement: Expr) -> boo
     pl_true may be useful here; see logic.py for its description.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return pl_true(~inverse_statement, assignments)
     "*** END YOUR CODE HERE ***"
 
 #______________________________________________________________________________
@@ -120,8 +143,8 @@ def plTrueInverse(assignments: Dict[Expr, bool], inverse_statement: Expr) -> boo
 
 def atLeastOne(literals: List[Expr]) -> Expr:
     """
-    Given a list of Expr literals (i.e. in the form A or ~A), return a single 
-    Expr instance in CNF (conjunctive normal form) that represents the logic 
+    Given a list of Expr literals (i.e. in the form A or ~A), return a single
+    Expr instance in CNF (conjunctive normal form) that represents the logic
     that at least one of the literals  ist is true.
     >>> A = PropSymbolExpr('A');
     >>> B = PropSymbolExpr('B');
@@ -144,8 +167,8 @@ def atLeastOne(literals: List[Expr]) -> Expr:
 
 def atMostOne(literals: List[Expr]) -> Expr:
     """
-    Given a list of Expr literals, return a single Expr instance in 
-    CNF (conjunctive normal form) that represents the logic that at most one of 
+    Given a list of Expr literals, return a single Expr instance in
+    CNF (conjunctive normal form) that represents the logic that at most one of
     the expressions in the list is true.
     itertools.combinations may be useful here.
     """
@@ -156,8 +179,8 @@ def atMostOne(literals: List[Expr]) -> Expr:
 
 def exactlyOne(literals: List[Expr]) -> Expr:
     """
-    Given a list of Expr literals, return a single Expr instance in 
-    CNF (conjunctive normal form)that represents the logic that exactly one of 
+    Given a list of Expr literals, return a single Expr instance in
+    CNF (conjunctive normal form)that represents the logic that exactly one of
     the expressions in the list is true.
     """
     "*** BEGIN YOUR CODE HERE ***"
@@ -169,7 +192,7 @@ def exactlyOne(literals: List[Expr]) -> Expr:
 
 def pacmanSuccessorAxiomSingle(x: int, y: int, time: int, walls_grid: List[List[bool]]=None) -> Expr:
     """
-    Successor state axiom for state (x,y,t) (from t-1), given the board (as a 
+    Successor state axiom for state (x,y,t) (from t-1), given the board (as a
     grid representing the wall locations).
     Current <==> (previous position at time t-1) & (took action to move to x, y)
     Available actions are ['North', 'East', 'South', 'West']
@@ -182,17 +205,17 @@ def pacmanSuccessorAxiomSingle(x: int, y: int, time: int, walls_grid: List[List[
         possible_causes.append( PropSymbolExpr(pacman_str, x, y+1, time=last)
                             & PropSymbolExpr('South', time=last))
     if walls_grid[x][y-1] != 1:
-        possible_causes.append( PropSymbolExpr(pacman_str, x, y-1, time=last) 
+        possible_causes.append( PropSymbolExpr(pacman_str, x, y-1, time=last)
                             & PropSymbolExpr('North', time=last))
     if walls_grid[x+1][y] != 1:
-        possible_causes.append( PropSymbolExpr(pacman_str, x+1, y, time=last) 
+        possible_causes.append( PropSymbolExpr(pacman_str, x+1, y, time=last)
                             & PropSymbolExpr('West', time=last))
     if walls_grid[x-1][y] != 1:
-        possible_causes.append( PropSymbolExpr(pacman_str, x-1, y, time=last) 
+        possible_causes.append( PropSymbolExpr(pacman_str, x-1, y, time=last)
                             & PropSymbolExpr('East', time=last))
     if not possible_causes:
         return None
-    
+
     "*** BEGIN YOUR CODE HERE ***"
     util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
@@ -210,13 +233,13 @@ def SLAMSuccessorAxiomSingle(x: int, y: int, time: int, walls_grid: List[List[bo
         moved_causes.append( PropSymbolExpr(pacman_str, x, y+1, time=last)
                             & PropSymbolExpr('South', time=last))
     if walls_grid[x][y-1] != 1:
-        moved_causes.append( PropSymbolExpr(pacman_str, x, y-1, time=last) 
+        moved_causes.append( PropSymbolExpr(pacman_str, x, y-1, time=last)
                             & PropSymbolExpr('North', time=last))
     if walls_grid[x+1][y] != 1:
-        moved_causes.append( PropSymbolExpr(pacman_str, x+1, y, time=last) 
+        moved_causes.append( PropSymbolExpr(pacman_str, x+1, y, time=last)
                             & PropSymbolExpr('West', time=last))
     if walls_grid[x-1][y] != 1:
-        moved_causes.append( PropSymbolExpr(pacman_str, x-1, y, time=last) 
+        moved_causes.append( PropSymbolExpr(pacman_str, x-1, y, time=last)
                             & PropSymbolExpr('East', time=last))
     if not moved_causes:
         return None
@@ -317,9 +340,9 @@ def positionLogicPlan(problem) -> List:
     walls_list = walls_grid.asList()
     x0, y0 = problem.startState
     xg, yg = problem.goal
-    
+
     # Get lists of possible locations (i.e. without walls) and possible actions
-    all_coords = list(itertools.product(range(width + 2), 
+    all_coords = list(itertools.product(range(width + 2),
             range(height + 2)))
     non_wall_coords = [loc for loc in all_coords if loc not in walls_list]
     actions = [ 'North', 'South', 'East', 'West' ]
@@ -567,15 +590,15 @@ def SLAMSuccessorAxioms(t: int, walls_grid: List[List], non_outer_wall_coords: L
 
 
 def modelToString(model: Dict[Expr, bool]) -> str:
-    """Converts the model to a string for printing purposes. The keys of a model are 
+    """Converts the model to a string for printing purposes. The keys of a model are
     sorted before converting the model to a string.
-    
-    model: Either a boolean False or a dictionary of Expr symbols (keys) 
-    and a corresponding assignment of True or False (values). This model is the output of 
+
+    model: Either a boolean False or a dictionary of Expr symbols (keys)
+    and a corresponding assignment of True or False (values). This model is the output of
     a call to pycoSAT.
     """
     if model == False:
-        return "False" 
+        return "False"
     else:
         # Dictionary
         modelList = sorted(model.items(), key=lambda item: str(item[0]))
@@ -639,7 +662,7 @@ class PlanningProblem:
         Only used in problems that use ghosts (FoodGhostPlanningProblem)
         """
         util.raiseNotDefined()
-        
+
     def getGoalState(self):
         """
         Returns goal state for problem. Note only defined for problems that have
