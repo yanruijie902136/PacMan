@@ -455,14 +455,22 @@ def localization(problem, agent) -> Generator:
     KB = []
 
     "*** BEGIN YOUR CODE HERE ***"
+    # Add to KB where the walls are and are not.
     for x, y in all_coords:
         wall_x_y = PropSymbolExpr(wall_str, x, y)
         KB.append(wall_x_y if (x, y) in walls_list else ~wall_x_y)
 
     for t in range(agent.num_timesteps):
-        "*** END YOUR CODE HERE ***"
         # Add pacphysics, action, and percept information to KB.
-        KB.append(pacphysicsAxioms(t, all_coords, non_outer_wall_coords, walls_grid, sensorAxioms, allLegalSuccessorAxioms))
+        pacphysics = pacphysicsAxioms(
+            t=t,
+            all_coords=all_coords,
+            non_outer_wall_coords=non_outer_wall_coords,
+            walls_grid=walls_grid,
+            sensorModel=sensorAxioms,
+            successorAxioms=allLegalSuccessorAxioms,
+        )
+        KB.append(pacphysics)
         KB.append(PropSymbolExpr(agent.actions[t], time=t))
         KB.append(fourBitPerceptRules(t, agent.getPercepts()))
 
@@ -470,15 +478,19 @@ def localization(problem, agent) -> Generator:
         possible_locations = []
         for x, y in non_outer_wall_coords:
             pacman_x_y_t = PropSymbolExpr(pacman_str, x, y, time=t)
-            if findModel(conjoin(KB) & pacman_x_y_t):
+            if findModel(conjoin(KB) & pacman_x_y_t) is not False:
                 possible_locations.append((x, y))
-            if entails(conjoin(KB), pacman_x_y_t):
+
+            if entails_x_y := entails(conjoin(KB), pacman_x_y_t):
                 KB.append(pacman_x_y_t)
-            if entails(conjoin(KB), ~pacman_x_y_t):
+            if entails_not_x_y := entails(conjoin(KB), ~pacman_x_y_t):
                 KB.append(~pacman_x_y_t)
+            if entails_x_y and entails_not_x_y:
+                print(f"Oops! Contradictions at ({x}, {y}) at timestep {t}")
 
         agent.moveToNextState(agent.actions[t])
 
+        "*** END YOUR CODE HERE ***"
         yield possible_locations
 
 #______________________________________________________________________________
