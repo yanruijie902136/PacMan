@@ -492,11 +492,11 @@ def localization(problem, agent) -> Generator:
             if findModel(conjoin(KB) & pacman_x_y_t) is not False:
                 possible_locations.append((x, y))
 
-            if entails_x_y := entails(conjoin(KB), pacman_x_y_t):
+            if entails_pacman_x_y_t := entails(conjoin(KB), pacman_x_y_t):
                 KB.append(pacman_x_y_t)
-            if entails_not_x_y := entails(conjoin(KB), ~pacman_x_y_t):
+            if entails_not_pacman_x_y_t := entails(conjoin(KB), ~pacman_x_y_t):
                 KB.append(~pacman_x_y_t)
-            if entails_x_y and entails_not_x_y:
+            if entails_pacman_x_y_t and entails_not_pacman_x_y_t:
                 print(f"Oops! Contradictions at ({x}, {y}) at timestep {t}")
 
         agent.moveToNextState(agent.actions[t])
@@ -526,13 +526,40 @@ def mapping(problem, agent) -> Generator:
         if ((x == 0 or x == problem.getWidth() + 1)
                 or (y == 0 or y == problem.getHeight() + 1)):
             known_map[x][y] = 1
-            outer_wall_sent.append(PropSymbolExpr(wall_str, x, y))
+            outer_wall_sent.append(WallExpr(x, y))
     KB.append(conjoin(outer_wall_sent))
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    KB.append(PacmanExpr(pac_x_0, pac_y_0, time=0))
 
     for t in range(agent.num_timesteps):
+        # Add pacphysics, action, and percept information to KB.
+        pacphysics = pacphysicsAxioms(
+            t=t,
+            all_coords=all_coords,
+            non_outer_wall_coords=non_outer_wall_coords,
+            walls_grid=known_map,
+            sensorModel=sensorAxioms,
+            successorAxioms=allLegalSuccessorAxioms,
+        )
+        KB.append(pacphysics)
+        KB.append(ActionExpr(agent.actions[t], time=t))
+        KB.append(fourBitPerceptRules(t, agent.getPercepts()))
+
+        # Find provable wall locations with updated KB.
+        for x, y in non_outer_wall_coords:
+            wall_x_y = WallExpr(x, y)
+            if entails_wall_x_y := entails(conjoin(KB), wall_x_y):
+                KB.append(wall_x_y)
+                known_map[x][y] = 1
+            if entails_not_wall_x_y := entails(conjoin(KB), ~wall_x_y):
+                KB.append(~wall_x_y)
+                known_map[x][y] = 0
+            if entails_wall_x_y and entails_not_wall_x_y:
+                print(f"Oops! Contradictions at ({x}, {y}) at timestep {t}")
+
+        agent.moveToNextState(agent.actions[t])
+
         "*** END YOUR CODE HERE ***"
         yield known_map
 
