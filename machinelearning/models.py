@@ -232,6 +232,15 @@ class LanguageIDModel(object):
 
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+        self.batch_size = 32
+        self.learning_rate = 0.1
+        self.hidden_size = 100
+
+        self.W = nn.Parameter(self.num_chars, self.hidden_size)
+        self.W_hidden = nn.Parameter(self.hidden_size, self.hidden_size)
+        self.W_output = nn.Parameter(self.hidden_size, len(self.languages))
+
+        self.parameters = [self.W, self.W_hidden, self.W_output]
 
     def run(self, xs):
         """
@@ -263,6 +272,12 @@ class LanguageIDModel(object):
                 (also called logits)
         """
         "*** YOUR CODE HERE ***"
+        for i, x in enumerate(xs):
+            z = nn.Linear(x, self.W)
+            if i > 0:
+                z = nn.Add(z, nn.Linear(h, self.W_hidden))
+            h = nn.ReLU(z)
+        return nn.Linear(h, self.W_output)
 
     def get_loss(self, xs, y):
         """
@@ -279,9 +294,19 @@ class LanguageIDModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        return nn.SoftmaxLoss(self.run(xs), y)
 
-    def train(self, dataset):
+    def train(self, dataset: backend.LanguageIDDataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        while True:
+            for x, y in dataset.iterate_once(self.batch_size):
+                loss = self.get_loss(x, y)
+                gradients = nn.gradients(loss, self.parameters)
+                for parameter, gradient in zip(self.parameters, gradients):
+                    parameter.update(gradient, -self.learning_rate)
+
+            if dataset.get_validation_accuracy() >= 0.88:
+                return
