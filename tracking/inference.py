@@ -629,11 +629,11 @@ class ParticleFilter(InferenceModule):
         This function should return a normalized distribution.
         """
         "*** YOUR CODE HERE ***"
-        belief = DiscreteDistribution()
+        beliefs = DiscreteDistribution()
         for p in self.particles:
-            belief[p] += 1.0
-        belief.normalize()
-        return belief
+            beliefs[p] += 1.0
+        beliefs.normalize()
+        return beliefs
         "*** END YOUR CODE HERE ***"
 
     ########### ########### ###########
@@ -653,7 +653,17 @@ class ParticleFilter(InferenceModule):
         the DiscreteDistribution may be useful.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        pacmanPosition = gameState.getPacmanPosition()
+        jailPosition = self.getJailPosition()
+
+        beliefs = self.getBeliefDistribution()
+        for p in set(self.particles):
+            beliefs[p] *= self.getObservationProb(observation, pacmanPosition, p, jailPosition)
+
+        if beliefs.total() == 0:
+            self.initializeUniformly(gameState)
+        else:
+            self.particles = [beliefs.sample() for _ in range(self.numParticles)]
         "*** END YOUR CODE HERE ***"
 
     ########### ########### ###########
