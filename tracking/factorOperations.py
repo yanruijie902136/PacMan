@@ -89,7 +89,7 @@ def joinFactors(factors: List[Factor]):
     """
 
     # typecheck portion
-    setsOfUnconditioned = [set(factor.unconditionedVariables()) for factor in factors]
+    setsOfUnconditioned = [factor.unconditionedVariables() for factor in factors]
     if len(factors) > 1:
         intersect = functools.reduce(lambda x, y: x & y, setsOfUnconditioned)
         if len(intersect) > 0:
@@ -103,11 +103,11 @@ def joinFactors(factors: List[Factor]):
 
     "*** YOUR CODE HERE ***"
     variableDomainsDict = list(factors)[0].variableDomainsDict()
-    unconditionedVars = functools.reduce(lambda x, y: x | y, setsOfUnconditioned)
-    setsOfConditioned = [set(factor.conditionedVariables()) for factor in factors]
-    conditionedVars = functools.reduce(lambda x, y: x | y, setsOfConditioned) - unconditionedVars
+    unconditionedVariables = functools.reduce(lambda x, y: x | y, setsOfUnconditioned)
+    setsOfConditioned = [factor.conditionedVariables() for factor in factors]
+    conditionedVariables = functools.reduce(lambda x, y: x | y, setsOfConditioned) - unconditionedVariables
 
-    joined = Factor(list(unconditionedVars), list(conditionedVars), variableDomainsDict)
+    joined = Factor(unconditionedVariables, conditionedVariables, variableDomainsDict)
     for assignmentDict in joined.getAllPossibleAssignmentDicts():
         probability = functools.reduce(
             lambda x, y: x * y, [factor.getProbability(assignmentDict) for factor in factors]
@@ -164,7 +164,14 @@ def eliminateWithCallTracking(callTrackingList=None):
                     "unconditionedVariables: " + str(factor.unconditionedVariables()))
 
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        newUnconditionedVariables = factor.unconditionedVariables()
+        newUnconditionedVariables.remove(eliminationVariable)
+        eliminated = Factor(newUnconditionedVariables, factor.conditionedVariables(), factor.variableDomainsDict())
+        for assignmentDict in factor.getAllPossibleAssignmentDicts():
+            eliminated.setProbability(
+                assignmentDict, eliminated.getProbability(assignmentDict) + factor.getProbability(assignmentDict)
+            )
+        return eliminated
         "*** END YOUR CODE HERE ***"
 
     return eliminate
