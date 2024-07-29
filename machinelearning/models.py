@@ -39,7 +39,7 @@ class PerceptronModel(object):
         "*** YOUR CODE HERE ***"
         return 1 if nn.as_scalar(self.run(x)) >= 0 else -1
 
-    def train(self, dataset: backend.Dataset):
+    def train(self, dataset: backend.PerceptronDataset):
         """
         Train the perceptron until convergence.
         """
@@ -63,6 +63,21 @@ class RegressionModel(object):
     def __init__(self):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+        # Hyperparameters.
+        self.batch_size = 8
+        self.learning_rate = 0.01
+
+        # Trainable parameters.
+        layer_size1, layer_size2 = 100, 100
+        self.W1, self.b1 = nn.Parameter(1, layer_size1), nn.Parameter(1, layer_size1)
+        self.W2, self.b2 = nn.Parameter(layer_size1, layer_size2), nn.Parameter(1, layer_size2)
+        self.W3, self.b3 = nn.Parameter(layer_size2, 1), nn.Parameter(1, 1)
+
+        self.parameters = [
+            self.W1, self.b1,
+            self.W2, self.b2,
+            self.W3, self.b3,
+        ]
 
     def run(self, x):
         """
@@ -74,6 +89,9 @@ class RegressionModel(object):
             A node with shape (batch_size x 1) containing predicted y-values
         """
         "*** YOUR CODE HERE ***"
+        x = nn.ReLU(nn.AddBias(nn.Linear(x, self.W1), self.b1))
+        x = nn.ReLU(nn.AddBias(nn.Linear(x, self.W2), self.b2))
+        return nn.AddBias(nn.Linear(x, self.W3), self.b3)
 
     def get_loss(self, x, y):
         """
@@ -86,12 +104,28 @@ class RegressionModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        return nn.SquareLoss(self.run(x), y)
 
-    def train(self, dataset):
+    def train(self, dataset: backend.RegressionDataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        while True:
+            total_train_loss, num_batches = 0, 0
+            for x, y in dataset.iterate_once(self.batch_size):
+                loss = self.get_loss(x, y)
+                total_train_loss += nn.as_scalar(loss)
+                num_batches += 1
+
+                gradients = nn.gradients(loss, self.parameters)
+                for parameter, gradient in zip(self.parameters, gradients):
+                    parameter.update(gradient, -self.learning_rate)
+
+            average_train_loss = total_train_loss / num_batches
+            # print("average train loss:", average_train_loss)
+            if average_train_loss < 0.02:
+                return
 
 class DigitClassificationModel(object):
     """
