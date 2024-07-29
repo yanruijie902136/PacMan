@@ -144,6 +144,22 @@ class DigitClassificationModel(object):
     def __init__(self):
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+        # Hyperparameters.
+        self.batch_size = 32
+        self.learning_rate = 0.1
+
+        # Trainable parameters.
+        input_size, output_size = 784, 10
+        layer1_size, layer2_size = 200, 100
+        self.W1, self.b1 = nn.Parameter(input_size, layer1_size), nn.Parameter(1, layer1_size)
+        self.W2, self.b2 = nn.Parameter(layer1_size, layer2_size), nn.Parameter(1, layer2_size)
+        self.W3, self.b3 = nn.Parameter(layer2_size, output_size), nn.Parameter(1, output_size)
+
+        self.parameters = [
+            self.W1, self.b1,
+            self.W2, self.b2,
+            self.W3, self.b3,
+        ]
 
     def run(self, x):
         """
@@ -160,6 +176,9 @@ class DigitClassificationModel(object):
                 (also called logits)
         """
         "*** YOUR CODE HERE ***"
+        x = nn.ReLU(nn.AddBias(nn.Linear(x, self.W1), self.b1))
+        x = nn.ReLU(nn.AddBias(nn.Linear(x, self.W2), self.b2))
+        return nn.AddBias(nn.Linear(x, self.W3), self.b3)
 
     def get_loss(self, x, y):
         """
@@ -175,12 +194,25 @@ class DigitClassificationModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        return nn.SoftmaxLoss(self.run(x), y)
 
-    def train(self, dataset):
+    def train(self, dataset: backend.DigitClassificationDataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        while True:
+            for x, y in dataset.iterate_once(self.batch_size):
+                loss = self.get_loss(x, y)
+                gradients = nn.gradients(loss, self.parameters)
+                for parameter, gradient in zip(self.parameters, gradients):
+                    parameter.update(gradient, -self.learning_rate)
+
+            if self.learning_rate > 0.005:
+                self.learning_rate -= 0.005
+
+            if dataset.get_validation_accuracy() >= 0.98:
+                return
 
 class LanguageIDModel(object):
     """
