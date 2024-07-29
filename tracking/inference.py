@@ -191,8 +191,7 @@ def inferenceByVariableEliminationWithCallTracking(callTrackingList=None):
         for variable in eliminationOrder:
             currentFactorsList, joinedFactor = joinFactorsByVariable(currentFactorsList, variable)
             if len(joinedFactor.unconditionedVariables()) > 1:
-                joinedFactor = eliminate(joinedFactor, variable)
-                currentFactorsList.append(joinedFactor)
+                currentFactorsList.append(eliminate(joinedFactor, variable))
         return normalize(joinFactors(currentFactorsList))
         "*** END YOUR CODE HERE ***"
 
